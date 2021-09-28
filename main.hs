@@ -4,9 +4,13 @@ data Objeto = Patins | Arremesso | Bomba deriving (Eq)
 -- Auxiliares para o jogador
 type Capacidades = ((Objeto, Int), (Objeto, Int), (Objeto, Int))
 type Posicao = (Int, Int)
+type ID = Int
+
+-- Jogador
+type Jogador = (ID, Posicao, Char, Capacidades) 
 
 -- Itens
-data Item = Grama | Objeto | Parede | Pedra | Jogador (Int, Posicao, Char, Capacidades) deriving (Eq)
+data Item = Grama | Objeto | Parede | Pedra | Jogador Int deriving (Eq)
 
 -- Tabuleiro 
 type Celula = [Item]
