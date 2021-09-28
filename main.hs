@@ -10,7 +10,7 @@ type ID = Int
 type Jogador = (ID, Posicao, Char, Capacidades) 
 
 -- Itens
-data Item = Grama | Objeto | Parede | Pedra | Jogador Int deriving (Eq)
+data Item = Grama | Objeto Objeto | Parede | Pedra | Jogador Int deriving (Eq)
 
 -- Tabuleiro 
 type Celula = [Item]
@@ -43,6 +43,9 @@ linha8 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama]
 
 tab :: Tabuleiro
 tab = (linha1, linha2, linha3, linha4, linha5, linha6, linha7, linha8)
+
+jogadores :: [Jogador]
+jogadores = [(1, (0,0), 'N', ((Patins, 0),(Arremesso, 0),(Bomba, 1))), (2, (7,7), 'S', ((Patins, 0),(Arremesso, 0),(Bomba, 1)))]
 
 -- Recebe a linha antes de ser modificada, o indice da celula que vai mudar, e a celula em si
 -- Retornando uma nova linha com a celula nova
@@ -111,9 +114,51 @@ pegaCelula (c0, c1, c2, c3, c4, c5, c6, c7) c
 pegaIndice :: Tabuleiro -> (Int, Int) -> Celula
 pegaIndice t (l, c) = pegaCelula (pegaLinha t l) c
 
+-- Verifica se existe jogador na célula
+existeJogador :: Celula -> Int -> Bool
+existeJogador [] _ = False
+existeJogador cel@(x:xs) id
+  | x == Jogador id = True
+  | otherwise = existeJogador xs id
+
+-- retorna a nova posição do jogador dependendo da direção
+novaPosicao :: Posicao -> Char -> Posicao
+novaPosicao pos@(linhaAtual,colunaAtual) d
+  | d == 'N' = (linhaAtual, colunaAtual+1)
+  | d == 'S' = (linhaAtual, colunaAtual-1)
+  | d == 'L' = (linhaAtual+1, colunaAtual)
+  | d == 'O' = (linhaAtual-1, colunaAtual)
+  | otherwise = error "Direção inválida"
+
+attPosicao :: [Jogador] -> Int -> Posicao -> [Jogador]
+attPosicao [] _ _ = []
+attPosicao ((i,p,d,c):xs) id novaPos
+  | i == id = (i,novaPos,d,c):xs
+  |otherwise = (i,novaPos,d,c):attPosicao xs id novaPos
 
 
-movimenta :: Tabuleiro -> Posicao -> Char -> Bool
-movimenta tabuleiro pos@(linhaAtual, colunaAtual) direcao
-  | not(direcaoValida direcao) = error "Direção Inválida"
-  | otherwise = False
+-- função de movimento ainda em desenvolvimento 
+movimenta :: Tabuleiro -> [Jogador] -> Int -> Char -> (Tabuleiro, [Jogador])
+movimenta t listaJ id dir
+  | not(direcaoValida dir) = error "Direção Inválida"
+  | not(existeJogador celulaAtual id) = error "Jogador não existe"
+  | ult == Pedra || ult == Parede || ult == Objeto Bomba = (t, listaJ)
+  | ult == Grama = (finalt, novaLJ)
+  | null celulaProx = (novot, [])
+  |otherwise = (t, listaJ)
+  where (_, pos@(linhaAtual,colunaAtual), _, _) = jogadores !! (id - 1)
+        novaPos = novaPosicao pos dir -- devolve a nova posicao (X, Y) do jogador dependendo da direcao
+        celulaAtual = pegaIndice t pos -- devolve a celula atual
+        celulaProx = pegaIndice t novaPos -- devolve a proxima celula
+        ult = last celulaProx -- ultimo elemento da proxima celula
+        celulaAtualAtt = drop 1 (reverse celulaAtual) -- faz uma nova celula removendo o jogador que movimentou
+        celulaProxAtt = celulaProx ++ [last celulaAtual] -- faz uma nova celula adicionando o jogador que movimentou
+        novot = novoTab t pos celulaAtualAtt -- tabuleiro atualizado com a celulaAtual modificada
+        finalt = novoTab novot novaPos celulaProxAtt -- tabuleiro atualizado com as duas celulas modificadas
+        novaLJ = attPosicao listaJ id novaPos
+
+-- Ainda em duvida se vai precisar dessa
+-- movimenta :: Tabuleiro -> Posicao -> Char -> Bool
+-- movimenta tabuleiro pos@(linhaAtual, colunaAtual) direcao
+--   | not(direcaoValida direcao) = error "Direção Inválida"
+--   | otherwise = False
