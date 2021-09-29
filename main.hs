@@ -131,11 +131,15 @@ existeJogador cel@(x:xs) id
 -- retorna a nova posição do jogador dependendo da direção
 novaPosicao :: Posicao -> Char -> Posicao
 novaPosicao pos@(linhaAtual,colunaAtual) d
-  | d == 'N' = (linhaAtual, colunaAtual+1)
-  | d == 'S' = (linhaAtual, colunaAtual-1)
-  | d == 'L' = (linhaAtual+1, colunaAtual)
-  | d == 'O' = (linhaAtual-1, colunaAtual)
+  | d == 'N' && proxL < 7 = (linhaAtual+1, colunaAtual)
+  | d == 'S' && prevL >= 0 = (linhaAtual-1, colunaAtual)
+  | d == 'L' && proxC < 7 = (linhaAtual, colunaAtual+1)
+  | d == 'O' && prevC >= 0 = (linhaAtual, colunaAtual-1)
   | otherwise = error "Direção inválida"
+  where proxL = linhaAtual+1
+        prevL = linhaAtual-1
+        proxC = colunaAtual+1
+        prevC = colunaAtual-1
 
 attPosicaoEDirecao :: [Jogador] -> Int -> Posicao -> Char -> [Jogador]
 attPosicaoEDirecao [] _ _ _ = []
