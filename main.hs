@@ -237,6 +237,19 @@ movimenta t listaJ id dir
         listaJSemJogadorId = removeJogador j jogadores -- jogador que caiu no buraco é removido
         listaJAposItemColetado obj = attCapacidades jogadores id (pegaObj jogadores id obj)
 
+-- Recebe um tabuleiro, uma lista de jogadores, id do jogador que vai soltar a bomba
+-- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
+soltaBomba :: Tabuleiro -> [Jogador] -> Int -> (Tabuleiro, [Jogador])
+soltaBomba t listaJ id
+  | not(existeJogador celulaAtual id) = error "Jogador não existe"
+  | otherwise = (novot, listaJ)
+  where j@(_, pos@(linhaAtual,colunaAtual), _, _) = pegaJogador id jogadores
+        --Celulas
+        celulaAtual = pegaIndice t pos -- devolve a celula atual
+        celulaAtualAposBomba = celulaAtual ++ [Objeto Bomba]-- faz uma nova celula adicionando uma bomba nela
+        -- Tabuleiros
+        novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
+
 
 fimDeJogo :: [Jogador]-> Bool
 fimDeJogo listaJ = length listaJ == 1
