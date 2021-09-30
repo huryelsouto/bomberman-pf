@@ -1,4 +1,3 @@
-import Main (Item(Jogador))
 -- Presentes ou bomba
 data Objeto = Patins | Arremesso | Bomba deriving (Show, Eq)
 
@@ -65,7 +64,7 @@ linha4 :: Linha
 linha4 = ([Grama], [Grama], [Grama], [Grama, Parede], [Grama, Objeto Bomba], [Grama, Jogador 2], [Grama], [Grama])
 
 linha5 :: Linha
-linha5 = ([Grama], [Grama], [Grama], [Grama], [Grama, Parede], [Grama], [Grama], [Grama])
+linha5 = ([Grama], [Grama], [Grama], [Grama], [Grama, Pedra], [Grama], [Grama], [Grama])
 
 linha6 :: Linha
 linha6 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
@@ -272,12 +271,13 @@ soltaBomba t listaJ id
         -- Tabuleiros
         novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
 
+-- Recebe uma tupla de tabuleiro e uma lista de jogadores
+-- Retorna um tabuleiro
 obterTab:: (Tabuleiro, [Jogador]) -> Tabuleiro
 obterTab (tab, l) = tab
 
-obterJog:: (Tabuleiro, [Jogador]) -> [Jogador]
-obterJog (tab, l) = l
-
+-- Recebe um tabuleiro, uma lista de jogadores e a posição da bomba
+-- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
 explodeBomba :: Tabuleiro -> [Jogador] -> Posicao -> (Tabuleiro, [Jogador])
 explodeBomba t listaJ posicaoBomba = explodeBomba' t listaJ posicaoBomba 4
 
@@ -285,25 +285,27 @@ explodeBomba t listaJ posicaoBomba = explodeBomba' t listaJ posicaoBomba 4
 -- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
 explodeBomba' :: Tabuleiro -> [Jogador] -> Posicao -> Int -> (Tabuleiro, [Jogador])
 explodeBomba' t listaJ posicaoBomba num
-  | num > 1 = (obterTab (explodeBomba' t listaJ posicaoBomba (num - 1)), obterJog (explodeBomba' t listaJ posicaoBomba (num - 1)))
-  | ult == Pedra || ult == Objeto Patins || ult == Objeto Arremesso = (tabAposDestruicao, listaJ)
- -- | ult == Parede || ult == Grama = (t, listaJ)
-  | otherwise = (t, listaJ)
+  | num == 0 = (tabAposBombaDestuida, listaJ)
+  | otherwise = explodeBomba' tabAposDestruicao listaJ posicaoBomba (num - 1)
   where dir
            | num == 4 = 'N'
            | num == 3 = 'S'
            | num == 2 = 'L'
            | otherwise = 'O'
-        novaPos = novaPosicao posicaoBomba dir -- devolve a nova posicao (X, Y) do jogador dependendo da direcao
+        novaPos = novaPosicao posicaoBomba dir -- devolve a nova posicao (X, Y) da bomba dependendo da direcao
 
         celulaAtual = pegaIndice t posicaoBomba -- devolve a celula atual
         celulaProx = pegaIndice t novaPos -- devolve a proxima celula
         ult = last celulaProx -- ultimo elemento da proxima celula
         
-        celulaProxDestruida = drop 1 (reverse celulaProx) -- faz uma nova celula removendo o item atingido pela bomba
+        celulaProxDestruida = if ult == Parede || ult == Objeto Patins || ult == Objeto Arremesso 
+                              then drop 1 (reverse celulaProx)
+                              else celulaProx -- faz uma nova celula removendo o item atingido pela bomba (caso possa ser removido)
+        
+        celulaAtualSemBomba = drop 1 (reverse celulaAtual) -- retira a bomba da após ela ser explodida
 
-        novot = novoTab t posicaoBomba celulaProxDestruida -- tabuleiro atualizado com a celulaAtual modificada
-        tabAposDestruicao = novoTab novot novaPos celulaProxDestruida -- tabuleiro atualizado com as duas celulas modificadas (atual e prox)
+        tabAposDestruicao = novoTab t novaPos celulaProxDestruida -- tabuleiro atualizado após a bomba destruída em uma posição
+        tabAposBombaDestuida = novoTab t posicaoBomba celulaAtualSemBomba -- tabuleiro sem a bomba na célula de origem
 
 {-
 >>>pegaLinha tab 0
@@ -318,7 +320,7 @@ explodeBomba' t listaJ posicaoBomba num
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama,Jogador 2],[Grama],[Grama])
-([Grama],[Grama],[Grama],[Grama],[Grama,Parede],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama,Pedra],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
@@ -333,15 +335,15 @@ explodeBomba' t listaJ posicaoBomba num
 >>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 7
 ([Grama,Jogador 1],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
-([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama])
-([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama,Jogador 2],[Grama],[Grama])
-([Grama],[Grama],[Grama],[Grama],[Grama,Parede],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama,Jogador 2],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama,Pedra],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 
 >>>soltaBomba tab jogadores 1
-((([Grama,Jogador 1,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama,Jogador 2],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Parede],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
+((([Grama,Jogador 1,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama,Jogador 2],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Pedra],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
 
 -}
 
