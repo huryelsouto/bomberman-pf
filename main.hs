@@ -1,3 +1,7 @@
+-- BOMBERMAN feito por:
+-- Huryel Souto Costa - 12011BCC022
+-- Tiago da Silva e Souza Pinto - 12011BCC001
+
 -- Presentes ou bomba
 data Objeto = Patins | Arremesso | Bomba deriving (Show, Eq)
 
