@@ -1,4 +1,4 @@
-import System.Posix.ByteString (otherExecuteMode)
+import Main (Item(Jogador))
 -- Presentes ou bomba
 data Objeto = Patins | Arremesso | Bomba deriving (Show, Eq)
 
@@ -53,19 +53,19 @@ criaTabuleiro t@(
         l8 = conf c57 && conf c58 && conf c59 && conf c60 && conf c61 && conf c62 && conf c63 && conf c64
 
 linha1 :: Linha
-linha1 = ([Grama, Jogador 1], [Grama, Objeto Bomba], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
+linha1 = ([Grama, Jogador 1], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
 
 linha2 :: Linha
-linha2 = ([Grama, Objeto Patins], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
+linha2 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
 
 linha3 :: Linha
-linha3 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
+linha3 = ([Grama], [Grama], [Grama], [Grama], [Grama, Objeto Patins], [Grama], [Grama], [Grama])
 
 linha4 :: Linha
-linha4 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
+linha4 = ([Grama], [Grama], [Grama], [Grama, Parede], [Grama, Objeto Bomba], [Grama, Jogador 2], [Grama], [Grama])
 
 linha5 :: Linha
-linha5 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
+linha5 = ([Grama], [Grama], [Grama], [Grama], [Grama, Parede], [Grama], [Grama], [Grama])
 
 linha6 :: Linha
 linha6 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
@@ -272,19 +272,24 @@ soltaBomba t listaJ id
         -- Tabuleiros
         novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
 
+obterTab:: (Tabuleiro, [Jogador]) -> Tabuleiro
+obterTab (tab, l) = tab
+
+obterJog:: (Tabuleiro, [Jogador]) -> [Jogador]
+obterJog (tab, l) = l
+
 explodeBomba :: Tabuleiro -> [Jogador] -> Posicao -> (Tabuleiro, [Jogador])
-explodeBomba t listaJ posicaoBomba = explodeBombaAux t listaJ posicaoBomba 4
+explodeBomba t listaJ posicaoBomba = explodeBomba' t listaJ posicaoBomba 4
 
 -- Recebe um tabuleiro, uma lista de jogadores, a posição da bomba, e a diração da explosão
 -- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
-explodeBombaAux :: Tabuleiro -> [Jogador] -> Posicao -> Int -> (Tabuleiro, [Jogador])
-explodeBombaAux t listaJ posicaoBomba num
-  | num < 1 = (t, listaJ)
-  | num > 1 = explodeBombaAux t listaJ posicaoBomba (num-1)
+explodeBomba' :: Tabuleiro -> [Jogador] -> Posicao -> Int -> (Tabuleiro, [Jogador])
+explodeBomba' t listaJ posicaoBomba num
+  | num > 1 = (obterTab (explodeBomba' t listaJ posicaoBomba (num - 1)), obterJog (explodeBomba' t listaJ posicaoBomba (num - 1)))
   | ult == Pedra || ult == Objeto Patins || ult == Objeto Arremesso = (tabAposDestruicao, listaJ)
-  | ult == Parede || ult == Grama = (t, listaJ)
+ -- | ult == Parede || ult == Grama = (t, listaJ)
   | otherwise = (t, listaJ)
-  where dir 
+  where dir
            | num == 4 = 'N'
            | num == 3 = 'S'
            | num == 2 = 'L'
@@ -299,16 +304,44 @@ explodeBombaAux t listaJ posicaoBomba num
 
         novot = novoTab t posicaoBomba celulaProxDestruida -- tabuleiro atualizado com a celulaAtual modificada
         tabAposDestruicao = novoTab novot novaPos celulaProxDestruida -- tabuleiro atualizado com as duas celulas modificadas (atual e prox)
-        
-{-
->>>tab
-(([Grama,Jogador 1],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama,Objeto Patins],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]))
 
->>>explodeBomba tab jogadores (0,0) 'N'
-((([Grama],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
+{-
+>>>pegaLinha tab 0
+>>>pegaLinha tab 1
+>>>pegaLinha tab 2
+>>>pegaLinha tab 3
+>>>pegaLinha tab 4
+>>>pegaLinha tab 5
+>>>pegaLinha tab 6
+>>>pegaLinha tab 7
+([Grama,Jogador 1],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama,Jogador 2],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama,Parede],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+
+>>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 0
+>>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 1
+>>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 2
+>>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 3
+>>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 4
+>>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 5
+>>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 6
+>>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 7
+([Grama,Jogador 1],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama,Jogador 2],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama,Parede],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
+([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 
 >>>soltaBomba tab jogadores 1
-((([Grama,Jogador 1,Objeto Bomba],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama,Objeto Patins],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
+((([Grama,Jogador 1,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama,Jogador 2],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Parede],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
 
 -}
 
