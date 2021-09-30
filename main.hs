@@ -52,10 +52,10 @@ criaTabuleiro t@(
         l8 = conf c57 && conf c58 && conf c59 && conf c60 && conf c61 && conf c62 && conf c63 && conf c64
 
 linha1 :: Linha
-linha1 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
+linha1 = ([Grama, Jogador 1], [Grama, Objeto Bomba], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
 
 linha2 :: Linha
-linha2 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
+linha2 = ([Grama, Objeto Patins], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
 
 linha3 :: Linha
 linha3 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
@@ -79,7 +79,7 @@ tab :: Tabuleiro
 tab = (linha1, linha2, linha3, linha4, linha5, linha6, linha7, linha8)
 
 jogadores :: [Jogador]
-jogadores = [(1, (0,0), 'N', ((Patins, 0),(Arremesso, 0),(Bomba, 1))), (2, (7,7), 'S', ((Patins, 0),(Arremesso, 0),(Bomba, 1)))]
+jogadores = [(1, (0,0), 'N', ((Patins, 0),(Arremesso, 3),(Bomba, 1))), (2, (7,7), 'S', ((Patins, 0),(Arremesso, 0),(Bomba, 1)))]
 
 -- Recebe a linha antes de ser modificada, o indice da celula que vai mudar, e a celula em si
 -- Retornando uma nova linha com a celula nova
@@ -212,7 +212,8 @@ pegaObj listaJ id obj
 arremesso :: Tabuleiro -> Posicao -> Char -> Int -> Tabuleiro
 arremesso t p dir arr
   | arr == 0 = t
-  | ult == Parede || ult == Pedra = t
+  | ult == Parede || ult == Pedra || null celulaProx = t
+  | ult == Objeto Patins || ult == Objeto Arremesso = t
   | otherwise = arremesso finalt novaPos dir (arr-1)
   where novaPos = novaPosicao p dir -- devolve a nova posicao (X, Y) do jogador dependendo da direcao 
         celulaAtual = pegaIndice t p -- devolve a celula atual
@@ -235,7 +236,7 @@ movimenta t listaJ id dir
   | ult == Grama = (tabAposMovimento, listaJAposMovimento)
   | ult == Objeto Patins = (tabAposPegoItem, listaJAposItemColetado Patins)
   | ult == Objeto Arremesso = (tabAposPegoItem, listaJAposItemColetado Arremesso)
-  | ult == Objeto Bomba && arr > 0 = (arremesso t novaPos dir arr, listaJComNovaDirecao)
+  | ult == Objeto Bomba && arr >= 0 = (arremesso t novaPos dir arr, listaJComNovaDirecao)
   | null celulaProx = (novot, listaJSemJogadorId)
   |otherwise = (t, listaJ)
   where j@(_, pos@(linhaAtual,colunaAtual), _, (_,(_,arr),_)) = pegaJogador id jogadores
