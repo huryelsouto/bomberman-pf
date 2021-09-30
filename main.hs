@@ -17,6 +17,40 @@ type Celula = [Item]
 type Linha = (Celula, Celula, Celula, Celula, Celula, Celula, Celula, Celula)
 type Tabuleiro = (Linha, Linha, Linha, Linha, Linha, Linha, Linha, Linha)
 
+conf :: Celula -> Bool
+conf [Grama] = True
+conf [Grama, Jogador _] = True
+conf [Grama, Objeto _] = True
+conf [Grama, Objeto Arremesso, Parede] = True
+conf [Grama, Objeto Patins, Parede] = True
+conf [Grama, Parede] = True
+conf [Pedra] = True
+conf [Parede] = True
+conf c
+  | null c = True
+  |otherwise = False
+
+criaTabuleiro :: Tabuleiro -> Tabuleiro
+criaTabuleiro t@(
+  (c1, c2, c3, c4, c5, c6, c7, c8),
+  (c9, c10, c11, c12, c13, c14, c15, c16),
+  (c17, c18, c19, c20, c21, c22, c23, c24),
+  (c25, c26, c27, c28, c29, c30, c31, c32),
+  (c33, c34, c35, c36, c37, c38, c39, c40),
+  (c41, c42, c43, c44, c45, c46, c47, c48),
+  (c49, c50, c51, c52, c53, c54, c55, c56),
+  (c57, c58, c59, c60, c61, c62, c63, c64)
+  ) = if l1 && l2 && l3 && l4 && l5 && l6 && l7 && l8 then t
+                                                      else error "Tabuleiro inválido"
+  where l1 = conf c1 && conf c2 && conf c3 && conf c4 && conf c5 && conf c6 && conf c7 && conf c8
+        l2 = conf c9 && conf c10 && conf c11 && conf c12 && conf c13 && conf c14 && conf c15 && conf c16
+        l3 = conf c17 && conf c18 && conf c19 && conf c20 && conf c21 && conf c22 && conf c23 && conf c24
+        l4 = conf c25 && conf c26 && conf c27 && conf c28 && conf c29 && conf c30 && conf c31 && conf c32
+        l5 = conf c33 && conf c34 && conf c35 && conf c36 && conf c37 && conf c38 && conf c39 && conf c40
+        l6 = conf c41 && conf c42 && conf c43 && conf c44 && conf c45 && conf c46 && conf c47 && conf c48
+        l7 = conf c49 && conf c50 && conf c51 && conf c52 && conf c53 && conf c54 && conf c55 && conf c56
+        l8 = conf c57 && conf c58 && conf c59 && conf c60 && conf c61 && conf c62 && conf c63 && conf c64
+
 linha1 :: Linha
 linha1 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
 
@@ -135,7 +169,7 @@ novaPosicao pos@(linhaAtual,colunaAtual) d
   | d == 'S' && prevL >= 0 = (linhaAtual-1, colunaAtual)
   | d == 'L' && proxC < 7 = (linhaAtual, colunaAtual+1)
   | d == 'O' && prevC >= 0 = (linhaAtual, colunaAtual-1)
-  | otherwise = error "Direção inválida"
+  | otherwise = pos -- posição não muda
   where proxL = linhaAtual+1
         prevL = linhaAtual-1
         proxC = colunaAtual+1
