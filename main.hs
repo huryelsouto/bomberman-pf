@@ -1,5 +1,6 @@
+import System.Posix.ByteString (otherExecuteMode)
 -- Presentes ou bomba
-data Objeto = Patins | Arremesso | Bomba deriving (Eq)
+data Objeto = Patins | Arremesso | Bomba deriving (Show, Eq)
 
 -- Auxiliares para o jogador
 type Capacidades = ((Objeto, Int), (Objeto, Int), (Objeto, Int))
@@ -10,7 +11,7 @@ type ID = Int
 type Jogador = (ID, Posicao, Char, Capacidades) 
 
 -- Itens
-data Item = Grama | Objeto Objeto | Parede | Pedra | Jogador Int deriving (Eq)
+data Item = Grama | Objeto Objeto | Parede | Pedra | Jogador Int deriving (Show, Eq)
 
 -- Tabuleiro 
 type Celula = [Item]
@@ -271,6 +272,45 @@ soltaBomba t listaJ id
         -- Tabuleiros
         novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
 
+explodeBomba :: Tabuleiro -> [Jogador] -> Posicao -> (Tabuleiro, [Jogador])
+explodeBomba t listaJ posicaoBomba = explodeBombaAux t listaJ posicaoBomba 4
+
+-- Recebe um tabuleiro, uma lista de jogadores, a posição da bomba, e a diração da explosão
+-- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
+explodeBombaAux :: Tabuleiro -> [Jogador] -> Posicao -> Int -> (Tabuleiro, [Jogador])
+explodeBombaAux t listaJ posicaoBomba num
+  | num < 1 = (t, listaJ)
+  | num > 1 = explodeBombaAux t listaJ posicaoBomba (num-1)
+  | ult == Pedra || ult == Objeto Patins || ult == Objeto Arremesso = (tabAposDestruicao, listaJ)
+  | ult == Parede || ult == Grama = (t, listaJ)
+  | otherwise = (t, listaJ)
+  where dir 
+           | num == 4 = 'N'
+           | num == 3 = 'S'
+           | num == 2 = 'L'
+           | otherwise = 'O'
+        novaPos = novaPosicao posicaoBomba dir -- devolve a nova posicao (X, Y) do jogador dependendo da direcao
+
+        celulaAtual = pegaIndice t posicaoBomba -- devolve a celula atual
+        celulaProx = pegaIndice t novaPos -- devolve a proxima celula
+        ult = last celulaProx -- ultimo elemento da proxima celula
+        
+        celulaProxDestruida = drop 1 (reverse celulaProx) -- faz uma nova celula removendo o item atingido pela bomba
+
+        novot = novoTab t posicaoBomba celulaProxDestruida -- tabuleiro atualizado com a celulaAtual modificada
+        tabAposDestruicao = novoTab novot novaPos celulaProxDestruida -- tabuleiro atualizado com as duas celulas modificadas (atual e prox)
+        
+{-
+>>>tab
+(([Grama,Jogador 1],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama,Objeto Patins],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]))
+
+>>>explodeBomba tab jogadores (0,0) 'N'
+((([Grama],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
+
+>>>soltaBomba tab jogadores 1
+((([Grama,Jogador 1,Objeto Bomba],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama,Objeto Patins],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
+
+-}
 
 fimDeJogo :: [Jogador]-> Bool
 fimDeJogo listaJ = length listaJ == 1
