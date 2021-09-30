@@ -206,32 +206,52 @@ pegaObj listaJ id obj
   where j@(_, _, _, ((Patins, p),(Arremesso, a),b)) = pegaJogador id jogadores
 
 
+-- Recebe um tabuleiro, a posicao da bomba, a dir que ela ira, e o valor do arremesso -> Retornando um novo Tabuleiro
+-- A função movimenta a bomba uma célula de cada vez, diminuindo o valor do arremesso, pois caso chegue a 0 ela para
+-- E a cada chamada, a função verifica se é possível ir para a próx célula, caso não, a bomba para
+arremesso :: Tabuleiro -> Posicao -> Char -> Int -> Tabuleiro
+arremesso t p dir arr
+  | arr == 0 = t
+  | ult == Parede || ult == Pedra = t
+  | otherwise = arremesso finalt novaPos dir (arr-1)
+  where novaPos = novaPosicao p dir -- devolve a nova posicao (X, Y) do jogador dependendo da direcao 
+        celulaAtual = pegaIndice t p -- devolve a celula atual
+        celulaProx = pegaIndice t novaPos -- devolve a proxima celula
+        ult = last celulaProx -- ultimo elemento da proxima celula
+        celulaAtualSemBomba = drop 1 (reverse celulaAtual) -- faz uma nova celula removendo a bomba arremessada
+        celulaProxComBomba = celulaProx ++ [last celulaAtual] -- faz uma nova celula adicionando a bomba arremessada
+        novot = novoTab t p celulaAtualSemBomba -- tabuleiro atualizado com a celulaAtual modificada
+        finalt = novoTab novot novaPos celulaProxComBomba -- tabuleiro atualizado com as duas celulas modificadas (atual e prox)
+
+
+-- função de movimento ainda em desenvolvimento 
 -- Recebe um tabuleiro, uma lista de jogadores, id do jogador que vai se mover, e a diração do movimento
 -- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
 movimenta :: Tabuleiro -> [Jogador] -> Int -> Char -> (Tabuleiro, [Jogador])
 movimenta t listaJ id dir
   | not(direcaoValida dir) = error "Direção Inválida"
   | not(existeJogador celulaAtual id) = error "Jogador não existe"
-  | ult == Pedra || ult == Parede || ult == Objeto Bomba = (t, listaJComNovaDirecao)
+  | ult == Pedra || ult == Parede = (t, listaJComNovaDirecao)
   | ult == Grama = (tabAposMovimento, listaJAposMovimento)
   | ult == Objeto Patins = (tabAposPegoItem, listaJAposItemColetado Patins)
   | ult == Objeto Arremesso = (tabAposPegoItem, listaJAposItemColetado Arremesso)
+  | ult == Objeto Bomba && arr > 0 = (arremesso t novaPos dir arr, listaJComNovaDirecao)
   | null celulaProx = (novot, listaJSemJogadorId)
   |otherwise = (t, listaJ)
-  where j@(_, pos@(linhaAtual,colunaAtual), _, _) = pegaJogador id jogadores
+  where j@(_, pos@(linhaAtual,colunaAtual), _, (_,(_,arr),_)) = pegaJogador id jogadores
         novaPos = novaPosicao pos dir -- devolve a nova posicao (X, Y) do jogador dependendo da direcao
-        --Celulas
+
         celulaAtual = pegaIndice t pos -- devolve a celula atual
         celulaProx = pegaIndice t novaPos -- devolve a proxima celula
         ult = last celulaProx -- ultimo elemento da proxima celula
         celulaAtualSemJogador = drop 1 (reverse celulaAtual) -- faz uma nova celula removendo o jogador que movimentou
         celulaProxComJogador = celulaProx ++ [last celulaAtual] -- faz uma nova celula adicionando o jogador que movimentou
         celulaProxPegoUmItem = drop 1 (reverse celulaProx) ++ [last celulaAtual] -- faz uma nova celula removendo o item pego pelo jogador movimentou
-        -- Tabuleiros
+
         novot = novoTab t pos celulaAtualSemJogador -- tabuleiro atualizado com a celulaAtual modificada
         tabAposMovimento = novoTab novot novaPos celulaProxComJogador -- tabuleiro atualizado com as duas celulas modificadas (atual e prox)
         tabAposPegoItem = novoTab novot novaPos celulaProxPegoUmItem -- tabuleiro atualizado com as duas celulas modificadas (atual e prox) e pego um item pelo jogador
-        -- Listas de Jogadores
+
         listaJAposMovimento = attPosicaoEDirecao listaJ id novaPos dir -- nova lista de jogadores apos o movimento
         listaJComNovaDirecao = attDirecao listaJ id dir -- nova lista de jogadores atualizando apenas a direção
         listaJSemJogadorId = removeJogador j jogadores -- jogador que caiu no buraco é removido
