@@ -2,6 +2,9 @@
 -- Huryel Souto Costa - 12011BCC022
 -- Tiago da Silva e Souza Pinto - 12011BCC001
 
+import Data.Maybe (fromJust, fromMaybe, isNothing)
+import Text.Read (readMaybe)
+
 -- Presentes ou bomba
 data Objeto = Patins | Arremesso | Bomba deriving (Show, Eq)
 
@@ -20,6 +23,93 @@ data Item = Grama | Objeto Objeto | Parede | Pedra | Jogador Int deriving (Show,
 type Celula = [Item]
 type Linha = (Celula, Celula, Celula, Celula, Celula, Celula, Celula, Celula)
 type Tabuleiro = (Linha, Linha, Linha, Linha, Linha, Linha, Linha, Linha)
+
+
+
+
+-- LOOP DE AÇÕES IO
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+data Direção = Norte | Sul | Leste | Oeste
+  deriving (Show, Eq)
+
+data Ação = ColocarBomba | Mover Direção | NO_OP | Sair
+  deriving (Show, Eq)
+
+keyMaps =
+  [ (1, [('e', ColocarBomba), ('a', Mover Oeste), ('s', Mover Sul), ('d', Mover Leste), ('w', Mover Norte), ('Q', Sair)]),
+    (2, [('o', ColocarBomba), ('j', Mover Oeste), ('k', Mover Sul), ('l', Mover Leste), ('i', Mover Norte), ('Q', Sair)])
+  ]
+
+mapKey :: Char -> [(Int, [(Char, Ação)])] -> Maybe (Int, Ação)
+mapKey c [] = Nothing
+mapKey c ((j, as) : jas) = case mapKey' c as of
+  Nothing -> mapKey c jas
+  Just a -> Just (j, a)
+  where
+    mapKey' c [] = Nothing
+    mapKey' c ((c', a) : ms)
+      | c == c' = Just a
+      | otherwise = mapKey' c ms
+
+-- Retorna IO id do jogador e ação a ser executada.
+pegaMov :: [Int] -> IO (Maybe (Int, Ação))
+pegaMov js = do
+  movChar <- getChar
+  return
+    ( let mapped = mapKey movChar keyMaps
+       in case mapped of
+            Nothing -> Nothing
+            Just (j, a) ->
+              if j `elem` js
+                then mapped
+                else Nothing
+    )
+
+main :: IO ()
+main = do
+  actionLoop tabuleiro jogadores
+  where
+    (tabuleiro, jogadores) = iniciarTabuleiro
+
+tabuleiroExemplo = tab
+jogadoresExemplo = jogadores
+
+iniciarTabuleiro :: (Tabuleiro, [Jogador])
+iniciarTabuleiro = (tabuleiroExemplo, jogadoresExemplo)
+
+direcaoToChar :: Direção -> Char
+direcaoToChar dir
+  | dir == Norte = 'N'
+  | dir == Sul = 'S'
+  | dir == Leste = 'L'
+  | otherwise = 'O'
+
+actionLoop :: Tabuleiro -> [Jogador] -> IO ()
+actionLoop t js =
+  let ids = [i | (i, _, _, _) <- js]
+   in do
+        print t -- não tenho certeza se funciona só assim ou teria que criar uma função print (para ser no formato de uma matriz, melhor fazer um print linha por linha)
+        print js --           --          --          --              --                --
+        move <- pegaMov ids
+        let (j, op) = fromMaybe (-1, NO_OP) move
+         in do
+              print $ "(Jogador,Ação)" ++ show (j, op)
+              if op == Sair
+                then return ()
+                else
+                  let (t', js') = case op of
+                        ColocarBomba -> soltaBomba t js j
+                        Mover d -> movimenta t js j (direcaoToChar d)
+                        NO_OP -> (t, js)
+                        _ -> (t, js)
+                   in actionLoop t' js'
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
 
 conf :: Celula -> Bool
 conf [Grama] = True
