@@ -155,7 +155,7 @@ linha3 :: Linha
 linha3 = ([Grama], [Grama], [Grama], [Grama], [Grama, Objeto Patins], [Grama], [Grama], [Grama])
 
 linha4 :: Linha
-linha4 = ([Grama], [Grama], [Grama], [Grama, Parede], [Grama, Objeto Bomba], [Grama, Jogador 2], [Grama], [Grama])
+linha4 = ([Grama], [Grama], [Grama], [Grama, Parede], [Grama, Objeto Bomba], [Grama], [Grama], [Grama])
 
 linha5 :: Linha
 linha5 = ([Grama], [Grama], [Grama], [Grama], [Pedra], [Grama], [Grama], [Grama])
@@ -167,7 +167,7 @@ linha7 :: Linha
 linha7 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
 
 linha8 :: Linha
-linha8 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
+linha8 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama, Jogador 2])
 
 tab :: Tabuleiro
 tab = (linha1, linha2, linha3, linha4, linha5, linha6, linha7, linha8)
@@ -357,13 +357,16 @@ movimenta t listaJ id dir
 soltaBomba :: Tabuleiro -> [Jogador] -> Int -> (Tabuleiro, [Jogador])
 soltaBomba t listaJ id
   | not(existeJogador celulaAtual id) = error "Jogador não existe"
-  | otherwise = (novot, listaJ)
-  where j@(_, pos@(linhaAtual,colunaAtual), _, _) = pegaJogador id jogadores
+  | otherwise = (novot, listaJAposBombaSolta)
+  where j@(_, pos@(linhaAtual,colunaAtual), _, ((Patins, p),(Arremesso, a),(Bomba, b))) = pegaJogador id jogadores
         --Celulas
         celulaAtual = pegaIndice t pos -- devolve a celula atual
         celulaAtualAposBomba = celulaAtual ++ [Objeto Bomba]-- faz uma nova celula adicionando uma bomba nela
         -- Tabuleiros
         novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
+        listaJAposBombaSolta = attCapacidades listaJ id ((Patins, p),(Arremesso, a),(Bomba, b-1))
+        --j@(_, _, _, ((Patins, p),(Arremesso, a),b)) = pegaJogador id jogadores
+        --(ID, Posicao, Char, (Objeto, Int), (Objeto, Int), (Objeto, Int)) 
 
 -- Recebe uma tupla de tabuleiro e uma lista de jogadores
 -- Retorna um tabuleiro
@@ -416,6 +419,9 @@ explodeBomba' t listaJ posicaoBomba num
 
         tabAposDestruicao = novoTab t novaPos celulaProxDestruida -- tabuleiro atualizado após a bomba destruída em uma posição
         tabAposBombaDestuida = novoTab t posicaoBomba celulaAtualSemBomba -- tabuleiro sem a bomba na célula de origem
+
+pegaJogadoresTab :: (a, b) -> b
+pegaJogadoresTab (a, b) = b
 
 {-
 -- TABULEIRO
@@ -495,11 +501,14 @@ explodeBomba' t listaJ posicaoBomba num
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 
->>>soltaBomba tab jogadores 1
-((([Grama,Jogador 1,Objeto Bomba],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama,Jogador 2],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Pedra],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
+>>>soltaBomba tab jogadores 2
+Jogador não existe
 
 >>> jogadores
 [(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
+
+>>>show (pegaJogador 2 (pegaJogadoresTab (soltaBomba tab jogadores 1)))
+"(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))"
 
 >>> snd (explodeBomba tab jogadores (3,4))
 [(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1)))]
