@@ -322,7 +322,7 @@ arremesso t p dir arr
         celulaAtual = pegaIndice t p -- devolve a celula atual
         celulaProx = pegaIndice t novaPos -- devolve a proxima celula
         ult = last celulaProx -- ultimo elemento da proxima celula
-        celulaAtualSemBomba = drop 1 (reverse celulaAtual) -- faz uma nova celula removendo a bomba arremessada
+        celulaAtualSemBomba = reverse (drop 1 (reverse celulaAtual)) -- faz uma nova celula removendo a bomba arremessada
         celulaProxComBomba = celulaProx ++ [last celulaAtual] -- faz uma nova celula adicionando a bomba arremessada
         novot = novoTab t p celulaAtualSemBomba -- tabuleiro atualizado com a celulaAtual modificada
         finalt = novoTab novot novaPos celulaProxComBomba -- tabuleiro atualizado com as duas celulas modificadas (atual e prox)
@@ -348,9 +348,9 @@ movimenta t listaJ id dir
         celulaAtual = pegaIndice t pos -- devolve a celula atual
         celulaProx = pegaIndice t novaPos -- devolve a proxima celula
         ult = last celulaProx -- ultimo elemento da proxima celula
-        celulaAtualSemJogador = drop 1 (reverse celulaAtual) -- faz uma nova celula removendo o jogador que movimentou
+        celulaAtualSemJogador = reverse (drop 1 (reverse celulaAtual)) -- faz uma nova celula removendo o jogador que movimentou
         celulaProxComJogador = celulaProx ++ [last celulaAtual] -- faz uma nova celula adicionando o jogador que movimentou
-        celulaProxPegoUmItem = drop 1 (reverse celulaProx) ++ [last celulaAtual] -- faz uma nova celula removendo o item pego pelo jogador movimentou
+        celulaProxPegoUmItem = reverse (drop 1 (reverse celulaProx)) ++ [last celulaAtual] -- faz uma nova celula removendo o item pego pelo jogador movimentou
 
         novot = novoTab t pos celulaAtualSemJogador -- tabuleiro atualizado com a celulaAtual modificada
         tabAposMovimento = novoTab novot novaPos celulaProxComJogador -- tabuleiro atualizado com as duas celulas modificadas (atual e prox)
@@ -370,7 +370,7 @@ soltaBomba t listaJ id
   where j@(_, pos@(linhaAtual,colunaAtual), _, ((Patins, p),(Arremesso, a),(Bomba, b))) = pegaJogador id listaJ
         --Celulas
         celulaAtual = pegaIndice t pos -- devolve a celula atual
-        celulaAtualAposBomba = celulaAtual ++ [Objeto Bomba]-- faz uma nova celula adicionando uma bomba nela
+        celulaAtualAposBomba = reverse (drop 1 (reverse celulaAtual)) ++ [Objeto Bomba] ++ [last celulaAtual]-- faz uma nova celula adicionando uma bomba nela
         -- Tabuleiros
         novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
         listaJAposBombaSolta = attCapacidades listaJ id ((Patins, p),(Arremesso, a),(Bomba, b-1))
@@ -457,7 +457,6 @@ testeMovimenta (tabu, jog) num
 -- TABULEIRO
 >>> criaTabuleiro tab
 (([Grama,Jogador 1],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Pedra],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama,Jogador 2]))
-
 >>>pegaLinha tab 0
 >>>pegaLinha tab 1
 >>>pegaLinha tab 2
@@ -474,8 +473,6 @@ testeMovimenta (tabu, jog) num
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama,Jogador 2])
-
-
 -- MOVIMENTO
 >>>pegaLinha (obterTab (movimenta tab jogadores 2 'O')) 0
 >>>pegaLinha (obterTab (movimenta tab jogadores 2 'O')) 1
@@ -493,11 +490,8 @@ testeMovimenta (tabu, jog) num
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama,Jogador 2],[Grama])
-
 >>>show (pegaJogador 2 (obterJogadores (movimenta tab jogadores 2 'O')))
 "(2,(7,6),'O',((Patins,0),(Arremesso,0),(Bomba,1)))"
-
-
 -- ARREMESSO
 >>>pegaLinha (obterTab (movimenta tab jogadores 1 'O')) 0
 >>>pegaLinha (obterTab (movimenta tab jogadores 1 'O')) 1
@@ -515,8 +509,6 @@ testeMovimenta (tabu, jog) num
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama,Jogador 2])
-
-
 -- EXPLOSAO
 >>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 0
 >>>pegaLinha (obterTab (explodeBomba tab jogadores (3,4))) 1
@@ -534,16 +526,12 @@ testeMovimenta (tabu, jog) num
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama,Jogador 2])
-
 >>>soltaBomba tab jogadores 1
 ((([Grama,Jogador 1,Objeto Bomba],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Pedra],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama,Jogador 2])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,0))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
-
 >>> jogadores
 [(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
-
 >>>show (pegaJogador 1 (obterJogadores (soltaBomba tab jogadores 1)))
 "(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,0)))"
-
 >>> snd (explodeBomba tab jogadores (3,4))
 [(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
 -}
