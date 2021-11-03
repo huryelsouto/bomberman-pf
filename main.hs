@@ -68,7 +68,7 @@ pegaMov js = do
 
 main :: IO ()
 main = do
-  actionLoop tabuleiro jogadores
+  actionLoop tabuleiro jogadores 0
   where
     (tabuleiro, jogadores) = iniciarTabuleiro
 
@@ -85,35 +85,39 @@ direcaoToChar dir
   | dir == Leste = 'L'
   | otherwise = 'O'
 
-actionLoop :: Tabuleiro -> [Jogador] -> IO ()
-actionLoop t js =
-  let ids = [i | (i, _, _, _) <- js]
-   in do
-        print (pegaLinha t 0) -- não tenho certeza se funciona só assim ou teria que criar uma função print (para ser no formato de uma matriz, melhor fazer um print linha por linha)
-        print (pegaLinha t 1) 
-        print (pegaLinha t 2) 
-        print (pegaLinha t 3) 
-        print (pegaLinha t 4) 
-        print (pegaLinha t 5) 
-        print (pegaLinha t 6) 
-        print (pegaLinha t 7) 
-        print (pegaJogador 1 js) --           --          --          --              --                --
-        print (pegaJogador 2 js) 
-        putStrLn "Digite uma acao"
-        move <- pegaMov ids
-        let (j, op) = fromMaybe (-1, NO_OP) move
-         in do
-              print $ "(Jogador,Acao) " ++ show (j, op)
-              if op == Sair
-                then return ()
-                else
-                  let (t', js') = case op of
-                        ColocarBomba -> soltaBomba t js j
-                        Mover d -> movimenta t js j (direcaoToChar d)
-                        NO_OP -> (t, js)
-                        _ -> (t, js)
-                   in actionLoop t' js'
-
+actionLoop :: (Eq t, Num t) => Tabuleiro -> [Jogador] -> t -> IO ()
+actionLoop t js count =
+    if count /= 8 then
+      let ids = [i | (i, _, _, _) <- js]
+      in 
+        do
+            print (pegaLinha t 0) -- não tenho certeza se funciona só assim ou teria que criar uma função print (para ser no formato de uma matriz, melhor fazer um print linha por linha)
+            print (pegaLinha t 1) 
+            print (pegaLinha t 2) 
+            print (pegaLinha t 3) 
+            print (pegaLinha t 4) 
+            print (pegaLinha t 5) 
+            print (pegaLinha t 6) 
+            print (pegaLinha t 7) 
+            print (pegaJogador 1 js) --           --          --          --              --                --
+            print (pegaJogador 2 js) 
+            putStrLn "Digite uma acao"
+            move <- pegaMov ids
+            let (j, op) = fromMaybe (-1, NO_OP) move
+              in do
+                    print $ "(Jogador,Acao) " ++ show (j, op)
+                    if op == Sair
+                      then return ()
+                      else
+                        let (t', js') = case op of
+                              ColocarBomba -> soltaBomba t js j
+                              Mover d -> movimenta t js j (direcaoToChar d)
+                              NO_OP -> (t, js)
+                              _ -> (t, js)
+                        in actionLoop t' js' (count+1)
+    else
+        actionLoop tabu jog 0
+                  where (tabu, jog) = explodeBombasTab (t, js)
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -264,6 +268,11 @@ existeJogador [] _ = False
 existeJogador cel@(x:xs) id
   | x == Jogador id = True
   | otherwise = existeJogador xs id
+
+existeBomba :: [Item] -> Bool
+existeBomba [] = False
+existeBomba cel = if Objeto Bomba `elem` cel then True else False 
+
 
 -- retorna a nova posição do jogador dependendo da direção
 novaPosicao :: Posicao -> Char -> Posicao
@@ -419,6 +428,7 @@ explodeBomba t listaJ posicaoBomba = explodeBomba' t listaJ posicaoBomba 4
 -- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
 explodeBomba' :: Tabuleiro -> [Jogador] -> Posicao -> Int -> (Tabuleiro, [Jogador])
 explodeBomba' t listaJ posicaoBomba num
+  | not(existeBomba celulaAtual) = (t, listaJ)
   | num == 0 = (tabAposBombaDestuida, listaJ)
   | jog /= 0 = explodeBomba' tabAposDestruicao listaJMenosJogador posicaoBomba (num - 1)
   | otherwise = explodeBomba' tabAposDestruicao listaJ posicaoBomba (num - 1)
@@ -438,10 +448,10 @@ explodeBomba' t listaJ posicaoBomba num
                                                                  -- se falso, jog = 0
         
         celulaProxDestruida = if ult == Parede || ult == Objeto Patins || ult == Objeto Arremesso || temJogador
-                              then drop 1 (reverse celulaProx)
+                              then reverse (drop 1 (reverse celulaProx))
                               else celulaProx -- faz uma nova celula removendo o item atingido pela bomba (caso possa ser removido)
         
-        celulaAtualSemBomba = drop 1 (reverse celulaAtual) -- retira a bomba da após ela ser explodida
+        celulaAtualSemBomba = reverse (drop 1 (reverse celulaAtual)) -- retira a bomba da após ela ser explodida
 
         j = pegaJogador jog jogadores -- pega o jogador com id (jog)
         listaJMenosJogador = removeJogador j listaJ -- lista de jogadores atualiza, removendo o jogador explodido
