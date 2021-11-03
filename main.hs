@@ -282,7 +282,7 @@ attPosicaoEDirecao :: [Jogador] -> Int -> Posicao -> Char -> [Jogador]
 attPosicaoEDirecao [] _ _ _ = []
 attPosicaoEDirecao ((i,p,d,c):xs) id novaPos novaDir
   | i == id = (i,novaPos,novaDir,c):xs
-  |otherwise = (i,novaPos,d,c):attPosicaoEDirecao xs id novaPos novaDir
+  |otherwise = (i,p,d,c):attPosicaoEDirecao xs id novaPos novaDir
 
 attDirecao :: [Jogador] -> Int -> Char -> [Jogador]
 attDirecao [] _ _ = []
@@ -367,7 +367,7 @@ soltaBomba :: Tabuleiro -> [Jogador] -> Int -> (Tabuleiro, [Jogador])
 soltaBomba t listaJ id
   | not(existeJogador celulaAtual id) = error "Jogador não existe"
   | otherwise = (novot, listaJAposBombaSolta)
-  where j@(_, pos@(linhaAtual,colunaAtual), _, ((Patins, p),(Arremesso, a),(Bomba, b))) = pegaJogador id jogadores
+  where j@(_, pos@(linhaAtual,colunaAtual), _, ((Patins, p),(Arremesso, a),(Bomba, b))) = pegaJogador id listaJ
         --Celulas
         celulaAtual = pegaIndice t pos -- devolve a celula atual
         celulaAtualAposBomba = celulaAtual ++ [Objeto Bomba]-- faz uma nova celula adicionando uma bomba nela
@@ -442,8 +442,8 @@ testeMovimenta (tabu, jog) num
 -- >>> jogadores
 -- [(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
 
--- >>> testeMovimenta (tab, jogadores) 0
--- [(1,(6,0),'S',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
+-- >>> testeMovimenta (tab, jogadores) 1
+-- [(1,(5,0),'S',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
 
 -- >>>obterJogadores (movimenta tab jogadores 1 'S')
 -- [(1,(1,0),'S',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
