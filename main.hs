@@ -342,7 +342,7 @@ movimenta t listaJ id dir
   | ult == Objeto Bomba && arr >= 0 = (arremesso t novaPos dir arr, listaJComNovaDirecao)
   | null celulaProx = (novot, listaJSemJogadorId)
   | otherwise = (t, listaJ)
-  where j@(_, pos@(linhaAtual,colunaAtual), _, (_,(_,arr),_)) = pegaJogador id jogadores
+  where j@(_, pos@(linhaAtual,colunaAtual), _, (_,(_,arr),_)) = pegaJogador id listaJ
         novaPos = novaPosicao pos dir -- devolve a nova posicao (X, Y) do jogador dependendo da direcao
 
         celulaAtual = pegaIndice t pos -- devolve a celula atual
@@ -436,15 +436,20 @@ explodeBomba' t listaJ posicaoBomba num
         tabAposBombaDestuida = novoTab t posicaoBomba celulaAtualSemBomba -- tabuleiro sem a bomba na célula de origem
 
 
-testeMovimenta js tab num
-                          | num == 6 = show  (obterJogadores (movimenta tab jogadores 1 'S')) 
-                          | otherwise = testeMovimenta (obterJogadores (movimenta tab jogadores 1 'S')) (obterTab (movimenta tab jogadores 1 'S')) (num+1)
+testeMovimenta (tabu, jog) num
+                          | num == 5 = obterJogadores (movimenta tabu jog 1 'S')
+                          | otherwise = testeMovimenta (movimenta tabu jog 1 'S') (num+1)
 -- >>> jogadores
 -- [(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
 
--- >>> testeMovimenta jogadores tab 5
--- Jogador não existe
+-- >>> testeMovimenta (tab, jogadores) 0
+-- [(1,(6,0),'S',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
 
+-- >>>obterJogadores (movimenta tab jogadores 1 'S')
+-- [(1,(1,0),'S',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
+
+-- >>>obterTab (movimenta tab jogadores 1 'S')
+-- (([Grama],[Grama,Objeto Bomba],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama,Jogador 1],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama,Objeto Patins],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama,Parede],[Grama,Objeto Bomba],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Pedra],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama,Jogador 2]))
 
 -- >>>obterJogadores (movimenta tab jogadores 1 'S')
 -- [(1,(1,0),'S',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
@@ -489,8 +494,8 @@ testeMovimenta js tab num
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])
 ([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama,Jogador 2],[Grama])
 
->>>show (pegaJogador 1 (obterJogadores (movimenta tab jogadores 2 'O')))
-"(1,(7,6),'N',((Patins,0),(Arremesso,3),(Bomba,1)))"
+>>>show (pegaJogador 2 (obterJogadores (movimenta tab jogadores 2 'O')))
+"(2,(7,6),'O',((Patins,0),(Arremesso,0),(Bomba,1)))"
 
 
 -- ARREMESSO
