@@ -278,6 +278,19 @@ novaPosicao pos@(linhaAtual,colunaAtual) d
         proxC = colunaAtual+1
         prevC = colunaAtual-1
 
+-- retorna se a próxima célula está dentro do tabuleiro, dependendo da direção
+novaPosicaoValida :: Posicao -> Char -> Bool
+novaPosicaoValida pos@(linhaAtual,colunaAtual) d
+  | d == 'N' && prevL >= 0 = True
+  | d == 'S' && proxL < 7 = True
+  | d == 'L' && proxC < 7 = True
+  | d == 'O' && prevC >= 0 =True
+  | otherwise = False -- próxima célula é inválida
+  where proxL = linhaAtual+1
+        prevL = linhaAtual-1
+        proxC = colunaAtual+1
+        prevC = colunaAtual-1
+
 attPosicaoEDirecao :: [Jogador] -> Int -> Posicao -> Char -> [Jogador]
 attPosicaoEDirecao [] _ _ _ = []
 attPosicaoEDirecao ((i,p,d,c):xs) id novaPos novaDir
@@ -314,6 +327,7 @@ pegaObj listaJ id obj
 -- E a cada chamada, a função verifica se é possível ir para a próx célula, caso não, a bomba para
 arremesso :: Tabuleiro -> Posicao -> Char -> Int -> Tabuleiro
 arremesso t p dir arr
+  | not (novaPosicaoValida p dir) = t
   | arr == 0 = t
   | ult == Parede || ult == Pedra || null celulaProx = t
   | ult == Objeto Patins || ult == Objeto Arremesso = t
