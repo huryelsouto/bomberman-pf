@@ -449,6 +449,19 @@ explodeBomba' t listaJ posicaoBomba num
         tabAposDestruicao = novoTab t novaPos celulaProxDestruida -- tabuleiro atualizado após a bomba destruída em uma posição
         tabAposBombaDestuida = novoTab t posicaoBomba celulaAtualSemBomba -- tabuleiro sem a bomba na célula de origem
 
+-- Recebe um uma tupla com o tabuleiro e uma lista de jogadores
+-- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores (com as bombas estouradas)
+explodeBombasTab :: (Tabuleiro, [Jogador]) -> (Tabuleiro, [Jogador])
+explodeBombasTab (tabu, jog) = explodeBombasTab' (tabu, jog) (0, 0)
+
+-- Recebe um uma tupla com o tabuleiro e uma lista de jogadores e a posição inicial do tabuleiro (onde começará os estouros)
+-- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores (com as bombas estouradas)
+explodeBombasTab' :: (Tabuleiro, [Jogador]) -> (Int, Int) -> (Tabuleiro, [Jogador])
+explodeBombasTab' (tabu, jog) pos@(l, c)
+                          | l <= 7 = if c < 7 then explodeBombasTab' (explodeBomba tabu jog (l,c)) (l, c+1)
+                                     else explodeBombasTab' (explodeBomba tabu jog (l,c)) (l+1, 0)
+                          | otherwise = (tabu, jog)
+
 
 testeMovimenta (tabu, jog) num
                           | num == 5 = obterJogadores (movimenta tabu jog 1 'S')
@@ -552,3 +565,34 @@ testeMovimenta (tabu, jog) num
 
 fimDeJogo :: [Jogador]-> Bool
 fimDeJogo listaJ = length listaJ == 1
+
+l0 :: Linha
+l0 = ([Grama, Objeto Bomba], [Grama,Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba])
+
+tabAux :: Tabuleiro
+tabAux = (l0, l0, l0, l0, l0, l0, l0, l0)
+
+{-
+>>>pegaLinha tabAux 0
+>>>pegaLinha tabAux 1
+>>>pegaLinha tabAux 2
+>>>pegaLinha tabAux 3
+>>>pegaLinha tabAux 4
+>>>pegaLinha tabAux 5
+>>>pegaLinha tabAux 6
+>>>pegaLinha tabAux 7
+([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
+([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
+([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
+([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
+([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
+([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
+([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
+([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
+
+
+>>> explodeBombasTab (tabAux, jogadores)
+((([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
+
+
+-}
