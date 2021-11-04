@@ -269,7 +269,7 @@ existeJogador cel@(x:xs) id
 
 
 listaBombas :: [Item]
-listaBombas = [ Objeto (Bomba (a, b)) | a <- [1..2], b <- [0..8] ]
+listaBombas = [ Objeto (Bomba (a, b)) | a <- [1..2], b <- [0..16] ]
 -- >>>listaBombas
 -- [Objeto (Bomba (1,1)),Objeto (Bomba (1,2)),Objeto (Bomba (1,3)),Objeto (Bomba (1,4)),Objeto (Bomba (1,5)),Objeto (Bomba (1,6)),Objeto (Bomba (1,7)),Objeto (Bomba (1,8)),Objeto (Bomba (2,1)),Objeto (Bomba (2,2)),Objeto (Bomba (2,3)),Objeto (Bomba (2,4)),Objeto (Bomba (2,5)),Objeto (Bomba (2,6)),Objeto (Bomba (2,7)),Objeto (Bomba (2,8))]
 
@@ -292,7 +292,7 @@ incrementaBomba cel@(x:xs)
 existeBomba :: [Item] -> (Bool, Int)
 existeBomba cel
                 | bomba == Nulo = (False, 0)
-                | b >= 8 = (True, a)
+                | b >= 14 = (True, a)
                 | otherwise = (False, 0)
                 where bomba = pegaBomba cel
                       Objeto (Bomba (a, b)) = bomba
@@ -305,8 +305,8 @@ existeBomba cel
 novaPosicao :: Posicao -> Char -> Posicao
 novaPosicao pos@(linhaAtual,colunaAtual) d
   | d == 'N' && prevL >= 0 = (linhaAtual-1, colunaAtual)
-  | d == 'S' && proxL < 7 = (linhaAtual+1, colunaAtual)
-  | d == 'L' && proxC < 7 = (linhaAtual, colunaAtual+1)
+  | d == 'S' && proxL <= 7 = (linhaAtual+1, colunaAtual)
+  | d == 'L' && proxC <= 7 = (linhaAtual, colunaAtual+1)
   | d == 'O' && prevC >= 0 = (linhaAtual, colunaAtual-1)
   | otherwise = pos -- posição não muda
   where proxL = linhaAtual+1
@@ -416,11 +416,12 @@ movimenta t listaJ id dir
 soltaBomba :: Tabuleiro -> [Jogador] -> Int -> (Tabuleiro, [Jogador])
 soltaBomba t listaJ id
   | not(existeJogador celulaAtual id) = error "Jogador não existe"
+  | b <=0 = (t, listaJ)
   | otherwise = (novot, listaJAposBombaSolta)
   where j@(_, pos@(linhaAtual,colunaAtual), _, ((Patins, p),(Arremesso, a),(Bomba (idDono, 0), b))) = pegaJogador id listaJ
         --Celulas
         celulaAtual = pegaIndice t pos -- devolve a celula atual
-        celulaAtualAposBomba = reverse (drop 1 (reverse celulaAtual)) ++ [Objeto (Bomba (idDono, 0))] ++ [last celulaAtual]-- faz uma nova celula adicionando uma bomba nela
+        celulaAtualAposBomba = reverse (drop 1 (reverse celulaAtual)) ++ [Objeto (Bomba (idDono, 1))] ++ [last celulaAtual]-- faz uma nova celula adicionando uma bomba nela
         -- Tabuleiros
         novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
         listaJAposBombaSolta = attCapacidades listaJ id ((Patins, p),(Arremesso, a),(Bomba (id, 0), b-1))
@@ -514,9 +515,7 @@ incrementaBombasTab' tabu pos@(l, c)
 incrementaBombasTab :: Tabuleiro -> Tabuleiro
 incrementaBombasTab tabu = incrementaBombasTab' tabu (0, 0)
 
-testeMovimenta (tabu, jog) num
-                          | num == 5 = obterJogadores (movimenta tabu jog 1 'S')
-                          | otherwise = testeMovimenta (movimenta tabu jog 1 'S') (num+1)
+
 -- >>> jogadores
 -- [(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))]
 
