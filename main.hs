@@ -6,18 +6,20 @@ import Data.Maybe (fromJust, fromMaybe, isNothing)
 import Text.Read (readMaybe)
 
 -- Presentes ou bomba
-data Objeto = Patins | Arremesso | Bomba deriving (Show, Eq)
+data Objeto = Patins | Arremesso | Bomba DadosBomba  deriving (Show, Eq)
 
 -- Auxiliares para o jogador
 type Capacidades = ((Objeto, Int), (Objeto, Int), (Objeto, Int))
 type Posicao = (Int, Int)
 type ID = Int
 
+type DadosBomba = (Int, Int)
+
 -- Jogador
-type Jogador = (ID, Posicao, Char, Capacidades) 
+type Jogador = (ID, Posicao, Char, Capacidades)
 
 -- Itens
-data Item = Grama | Objeto Objeto | Parede | Pedra | Jogador Int deriving (Show, Eq)
+data Item = Nulo| Grama | Objeto Objeto | Parede | Pedra | Jogador Int deriving (Show, Eq)
 
 -- Tabuleiro 
 type Celula = [Item]
@@ -68,7 +70,7 @@ pegaMov js = do
 
 main :: IO ()
 main = do
-  actionLoop tabuleiro jogadores 0
+  actionLoop (tabuleiro, jogadores)
   where
     (tabuleiro, jogadores) = iniciarTabuleiro
 
@@ -85,22 +87,21 @@ direcaoToChar dir
   | dir == Leste = 'L'
   | otherwise = 'O'
 
-actionLoop :: (Eq t, Num t) => Tabuleiro -> [Jogador] -> t -> IO ()
-actionLoop t js count =
-    if count /= 8 then
+actionLoop :: (Tabuleiro, [Jogador]) -> IO ()
+actionLoop (t, js) =
       let ids = [i | (i, _, _, _) <- js]
-      in 
+      in
         do
             print (pegaLinha t 0) -- não tenho certeza se funciona só assim ou teria que criar uma função print (para ser no formato de uma matriz, melhor fazer um print linha por linha)
-            print (pegaLinha t 1) 
-            print (pegaLinha t 2) 
-            print (pegaLinha t 3) 
-            print (pegaLinha t 4) 
-            print (pegaLinha t 5) 
-            print (pegaLinha t 6) 
-            print (pegaLinha t 7) 
+            print (pegaLinha t 1)
+            print (pegaLinha t 2)
+            print (pegaLinha t 3)
+            print (pegaLinha t 4)
+            print (pegaLinha t 5)
+            print (pegaLinha t 6)
+            print (pegaLinha t 7)
             print (pegaJogador 1 js) --           --          --          --              --                --
-            print (pegaJogador 2 js) 
+            print (pegaJogador 2 js)
             putStrLn "Digite uma acao"
             move <- pegaMov ids
             let (j, op) = fromMaybe (-1, NO_OP) move
@@ -114,10 +115,7 @@ actionLoop t js count =
                               Mover d -> movimenta t js j (direcaoToChar d)
                               NO_OP -> (t, js)
                               _ -> (t, js)
-                        in actionLoop t' js' (count+1)
-    else
-        actionLoop tabu jog 0
-                  where (tabu, jog) = explodeBombasTab (t, js)
+                        in actionLoop (explodeBombasTab (incrementaBombasTab t', js'))
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -159,16 +157,16 @@ criaTabuleiro t@(
         l8 = conf c57 && conf c58 && conf c59 && conf c60 && conf c61 && conf c62 && conf c63 && conf c64
 
 linha0 :: Linha
-linha0 = ([Grama, Jogador 1], [Grama,Objeto Bomba], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
+linha0 = ([Grama, Jogador 1], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
 
 linha1 :: Linha
 linha1 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
 
 linha2 :: Linha
-linha2 = ([Grama], [Grama], [Grama], [Grama], [Grama, Objeto Patins], [Grama], [Grama], [Grama])
+linha2 = ([Grama], [Grama], [Grama], [Grama, Objeto (Bomba (1, 1))], [Grama, Objeto Patins], [Grama], [Grama], [Grama])
 
 linha3 :: Linha
-linha3 = ([Grama], [Grama], [Grama], [Grama, Parede], [Grama, Objeto Bomba], [Grama], [Grama], [Grama])
+linha3 = ([Grama], [Grama], [Grama], [Grama, Parede], [Grama, Objeto (Bomba (2, 1))], [Grama], [Grama], [Grama])
 
 linha4 :: Linha
 linha4 = ([Grama], [Grama], [Grama], [Grama], [Pedra], [Grama], [Grama], [Grama])
@@ -186,7 +184,7 @@ tab :: Tabuleiro
 tab = (linha0, linha1, linha2, linha3, linha4, linha5, linha6, linha7)
 
 jogadores :: [Jogador]
-jogadores = [(1, (0,0), 'N', ((Patins, 0),(Arremesso, 3),(Bomba, 1))), (2, (7,7), 'S', ((Patins, 0),(Arremesso, 0),(Bomba, 1)))]
+jogadores = [(1, (0,0), 'N', ((Patins, 0),(Arremesso, 3),((Bomba (1, 0)), 1))), (2, (7,7), 'S', ((Patins, 0),(Arremesso, 0),((Bomba (2, 0)), 1)))]
 
 -- Recebe a linha antes de ser modificada, o indice da celula que vai mudar, e a celula em si
 -- Retornando uma nova linha com a celula nova
@@ -269,9 +267,38 @@ existeJogador cel@(x:xs) id
   | x == Jogador id = True
   | otherwise = existeJogador xs id
 
-existeBomba :: [Item] -> Bool
-existeBomba [] = False
-existeBomba cel = if Objeto Bomba `elem` cel then True else False 
+
+listaBombas :: [Item]
+listaBombas = [ Objeto (Bomba (a, b)) | a <- [1..2], b <- [0..8] ]
+-- >>>listaBombas
+-- [Objeto (Bomba (1,1)),Objeto (Bomba (1,2)),Objeto (Bomba (1,3)),Objeto (Bomba (1,4)),Objeto (Bomba (1,5)),Objeto (Bomba (1,6)),Objeto (Bomba (1,7)),Objeto (Bomba (1,8)),Objeto (Bomba (2,1)),Objeto (Bomba (2,2)),Objeto (Bomba (2,3)),Objeto (Bomba (2,4)),Objeto (Bomba (2,5)),Objeto (Bomba (2,6)),Objeto (Bomba (2,7)),Objeto (Bomba (2,8))]
+
+pegaBomba :: [Item] -> Item
+pegaBomba [] = Nulo
+pegaBomba cel@(x:xs)
+                    | x `elem` listaBombas = x
+                    | otherwise = pegaBomba xs
+
+
+incrementaBomba :: Celula -> Celula
+incrementaBomba [] = []
+incrementaBomba cel@(x:xs)
+                          | bomba == Nulo = cel
+                          | x == Objeto (Bomba (a, b)) = Objeto (Bomba (a, b+1)):xs
+                          | otherwise = x:incrementaBomba xs
+                          where bomba = pegaBomba cel
+                                Objeto (Bomba (a, b)) = bomba
+
+existeBomba :: [Item] -> (Bool, Int)
+existeBomba cel
+                | bomba == Nulo = (False, 0)
+                | b >= 8 = (True, a)
+                | otherwise = (False, 0)
+                where bomba = pegaBomba cel
+                      Objeto (Bomba (a, b)) = bomba
+
+
+
 
 
 -- retorna a nova posição do jogador dependendo da direção
@@ -362,7 +389,7 @@ movimenta t listaJ id dir
   | ult == Grama = (tabAposMovimento, listaJAposMovimento)
   | ult == Objeto Patins = (tabAposPegoItem, listaJAposItemColetado Patins)
   | ult == Objeto Arremesso = (tabAposPegoItem, listaJAposItemColetado Arremesso)
-  | ult == Objeto Bomba && arr >= 0 = (arremesso t novaPos dir arr, listaJComNovaDirecao)
+  | ult == Objeto (Bomba (0,0)) && arr >= 0 = (arremesso t novaPos dir arr, listaJComNovaDirecao)
   | null celulaProx = (novot, listaJSemJogadorId)
   | otherwise = (t, listaJ)
   where j@(_, pos@(linhaAtual,colunaAtual), _, (_,(_,arr),_)) = pegaJogador id listaJ
@@ -390,13 +417,13 @@ soltaBomba :: Tabuleiro -> [Jogador] -> Int -> (Tabuleiro, [Jogador])
 soltaBomba t listaJ id
   | not(existeJogador celulaAtual id) = error "Jogador não existe"
   | otherwise = (novot, listaJAposBombaSolta)
-  where j@(_, pos@(linhaAtual,colunaAtual), _, ((Patins, p),(Arremesso, a),(Bomba, b))) = pegaJogador id listaJ
+  where j@(_, pos@(linhaAtual,colunaAtual), _, ((Patins, p),(Arremesso, a),(Bomba (idDono, 0), b))) = pegaJogador id listaJ
         --Celulas
         celulaAtual = pegaIndice t pos -- devolve a celula atual
-        celulaAtualAposBomba = reverse (drop 1 (reverse celulaAtual)) ++ [Objeto Bomba] ++ [last celulaAtual]-- faz uma nova celula adicionando uma bomba nela
+        celulaAtualAposBomba = reverse (drop 1 (reverse celulaAtual)) ++ [Objeto (Bomba (idDono, 0))] ++ [last celulaAtual]-- faz uma nova celula adicionando uma bomba nela
         -- Tabuleiros
         novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
-        listaJAposBombaSolta = attCapacidades listaJ id ((Patins, p),(Arremesso, a),(Bomba, b-1))
+        listaJAposBombaSolta = attCapacidades listaJ id ((Patins, p),(Arremesso, a),(Bomba (id, 0), b-1))
         --j@(_, _, _, ((Patins, p),(Arremesso, a),b)) = pegaJogador id jogadores
         --(ID, Posicao, Char, (Objeto, Int), (Objeto, Int), (Objeto, Int)) 
 
@@ -428,8 +455,8 @@ explodeBomba t listaJ posicaoBomba = explodeBomba' t listaJ posicaoBomba 4
 -- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
 explodeBomba' :: Tabuleiro -> [Jogador] -> Posicao -> Int -> (Tabuleiro, [Jogador])
 explodeBomba' t listaJ posicaoBomba num
-  | not(existeBomba celulaAtual) = (t, listaJ)
-  | num == 0 = (tabAposBombaDestuida, listaJ)
+  | not flag = (t, listaJ)
+  | num == 0 = (tabAposBombaDestuida, listaJAposBombaDestruida)
   | jog /= 0 = explodeBomba' tabAposDestruicao listaJMenosJogador posicaoBomba (num - 1)
   | otherwise = explodeBomba' tabAposDestruicao listaJ posicaoBomba (num - 1)
   where dir
@@ -439,6 +466,10 @@ explodeBomba' t listaJ posicaoBomba num
            | otherwise = 'O'
         novaPos = novaPosicao posicaoBomba dir -- devolve a nova posicao (X, Y) da bomba dependendo da direcao
 
+        (flag, idDono) = existeBomba celulaAtual
+        dono@(_, _, _, ((Patins, p),(Arremesso, a),(Bomba (_, 0), b))) = pegaJogador idDono listaJ
+        listaJAposBombaDestruida = attCapacidades listaJ idDono ((Patins, p),(Arremesso, a),(Bomba (idDono, 0), b+1))
+
         celulaAtual = pegaIndice t posicaoBomba -- devolve a celula atual
         celulaProx = pegaIndice t novaPos -- devolve a proxima celula
         ult = last celulaProx -- ultimo elemento da proxima celula
@@ -446,11 +477,11 @@ explodeBomba' t listaJ posicaoBomba num
         (temJogador, jog) = temJogadorNaCelula celulaProx listaJ -- temJogador: Verdadeiro ou Falso
                                                                  -- se verdadeiro, jog = id do jogador
                                                                  -- se falso, jog = 0
-        
+
         celulaProxDestruida = if ult == Parede || ult == Objeto Patins || ult == Objeto Arremesso || temJogador
                               then reverse (drop 1 (reverse celulaProx))
                               else celulaProx -- faz uma nova celula removendo o item atingido pela bomba (caso possa ser removido)
-        
+
         celulaAtualSemBomba = reverse (drop 1 (reverse celulaAtual)) -- retira a bomba da após ela ser explodida
 
         j = pegaJogador jog jogadores -- pega o jogador com id (jog)
@@ -472,6 +503,16 @@ explodeBombasTab' (tabu, jog) pos@(l, c)
                                      else explodeBombasTab' (explodeBomba tabu jog (l,c)) (l+1, 0)
                           | otherwise = (tabu, jog)
 
+incrementaBombasTab' :: Tabuleiro -> (Int, Int) -> Tabuleiro
+incrementaBombasTab' tabu pos@(l, c)
+                          | l <= 7 = if c < 7 then incrementaBombasTab' tabAposBombaIncrementada (l, c+1)
+                                     else incrementaBombasTab' tabAposBombaIncrementada (l+1, 0)
+                          | otherwise = tabu
+                          where  celulaAtualBombaIncrementada = incrementaBomba (pegaIndice tabu pos)
+                                 tabAposBombaIncrementada = novoTab tabu pos celulaAtualBombaIncrementada
+
+incrementaBombasTab :: Tabuleiro -> Tabuleiro
+incrementaBombasTab tabu = incrementaBombasTab' tabu (0, 0)
 
 testeMovimenta (tabu, jog) num
                           | num == 5 = obterJogadores (movimenta tabu jog 1 'S')
@@ -576,33 +617,3 @@ testeMovimenta (tabu, jog) num
 fimDeJogo :: [Jogador]-> Bool
 fimDeJogo listaJ = length listaJ == 1
 
-l0 :: Linha
-l0 = ([Grama, Objeto Bomba], [Grama,Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba], [Grama, Objeto Bomba])
-
-tabAux :: Tabuleiro
-tabAux = (l0, l0, l0, l0, l0, l0, l0, l0)
-
-{-
->>>pegaLinha tabAux 0
->>>pegaLinha tabAux 1
->>>pegaLinha tabAux 2
->>>pegaLinha tabAux 3
->>>pegaLinha tabAux 4
->>>pegaLinha tabAux 5
->>>pegaLinha tabAux 6
->>>pegaLinha tabAux 7
-([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
-([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
-([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
-([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
-([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
-([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
-([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
-([Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba],[Grama,Objeto Bomba])
-
-
->>> explodeBombasTab (tabAux, jogadores)
-((([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama]),([Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama],[Grama])),[(1,(0,0),'N',((Patins,0),(Arremesso,3),(Bomba,1))),(2,(7,7),'S',((Patins,0),(Arremesso,0),(Bomba,1)))])
-
-
--}
