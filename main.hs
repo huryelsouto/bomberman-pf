@@ -367,7 +367,7 @@ pegaObj listaJ id obj
   | obj == Arremesso = ((Patins, p),(Arremesso, a+1),(Bomba k, b))
   | obj == PresenteBomba = ((Patins, p),(Arremesso, a),(Bomba k, b+1))
   | otherwise = error "Objeto inválido"
-  where j@(_, _, _, ((Patins, p),(Arremesso, a),(Bomba k, b))) = pegaJogador id jogadores
+  where j@(_, _, _, ((Patins, p),(Arremesso, a),(Bomba k, b))) = pegaJogador id listaJ
 
 
 -- Recebe um tabuleiro, a posicao da bomba, a dir que ela ira, e o valor do arremesso -> Retornando um novo Tabuleiro
@@ -422,7 +422,7 @@ movimenta t listaJ id dir
         listaJAposMovimento = attPosicaoEDirecao listaJ id novaPos dir -- nova lista de jogadores apos o movimento
         listaJComNovaDirecao = attDirecao listaJ id dir -- nova lista de jogadores atualizando apenas a direção
         listaJSemJogadorId = removeJogador j listaJ -- jogador que caiu no buraco é removido
-        listaJAposItemColetado obj = attCapacidades listaJ id novaPos dir (pegaObj jogadores id obj)
+        listaJAposItemColetado obj = attCapacidades listaJ id novaPos dir (pegaObj listaJ id obj)
 
 -- Recebe um tabuleiro, uma lista de jogadores, id do jogador que vai soltar a bomba
 -- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
@@ -496,7 +496,7 @@ explodeBomba' t listaJ posicaoBomba num
 
         celulaAtualSemBomba = reverse (drop 1 (reverse celulaAtual)) -- retira a bomba da após ela ser explodida
 
-        j = pegaJogador jog jogadores -- pega o jogador com id (jog)
+        j = pegaJogador jog listaJ -- pega o jogador com id (jog)
         listaJMenosJogador = removeJogador j listaJ -- lista de jogadores atualiza, removendo o jogador explodido
 
         tabAposDestruicao = novoTab t novaPos celulaProxDestruida -- tabuleiro atualizado após a bomba destruída em uma posição
