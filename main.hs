@@ -349,11 +349,11 @@ attDirecao ((i,p,d,c):xs) id novaDir
   |otherwise = (i,p,d,c):attDirecao xs id novaDir
 
 -- função que altera as capacidades dos itens de um jogador
-attCapacidades :: [Jogador] -> Int -> Capacidades -> [Jogador]
-attCapacidades [] _ _ = []
-attCapacidades ((i,p,d,c):xs) id novasCapacidades
-  | i == id = (i,p,d,novasCapacidades):xs
-  |otherwise = (i,p,d,c):attCapacidades xs id novasCapacidades
+attCapacidades :: [Jogador] -> Int -> Posicao -> Char -> Capacidades -> [Jogador]
+attCapacidades [] _ _ _ _ = []
+attCapacidades ((i,p,d,c):xs) id novaPos novaDir novasCapacidades
+  | i == id = (i,novaPos,novaDir,novasCapacidades):xs
+  |otherwise = (i,p,d,c):attCapacidades xs id novaPos novaDir novasCapacidades
 
 -- função que remove um jogador da lista de jogadores
 removeJogador :: Jogador -> [Jogador] -> [Jogador]
@@ -422,7 +422,7 @@ movimenta t listaJ id dir
         listaJAposMovimento = attPosicaoEDirecao listaJ id novaPos dir -- nova lista de jogadores apos o movimento
         listaJComNovaDirecao = attDirecao listaJ id dir -- nova lista de jogadores atualizando apenas a direção
         listaJSemJogadorId = removeJogador j listaJ -- jogador que caiu no buraco é removido
-        listaJAposItemColetado obj = attCapacidades listaJ id (pegaObj jogadores id obj)
+        listaJAposItemColetado obj = attCapacidades listaJ id novaPos dir (pegaObj jogadores id obj)
 
 -- Recebe um tabuleiro, uma lista de jogadores, id do jogador que vai soltar a bomba
 -- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores
@@ -431,13 +431,13 @@ soltaBomba t listaJ id
   | not(existeJogador celulaAtual id) = error "Jogador não existe"
   | b <=0 = (t, listaJ)
   | otherwise = (novot, listaJAposBombaSolta)
-  where j@(_, pos@(linhaAtual,colunaAtual), _, ((Patins, p),(Arremesso, a),(Bomba (idDono, 0), b))) = pegaJogador id listaJ
+  where j@(_, pos@(linhaAtual,colunaAtual), dir, ((Patins, p),(Arremesso, a),(Bomba (idDono, 0), b))) = pegaJogador id listaJ
         --Celulas
         celulaAtual = pegaIndice t pos -- devolve a celula atual
         celulaAtualAposBomba = reverse (drop 1 (reverse celulaAtual)) ++ [Objeto (Bomba (idDono, 1))] ++ [last celulaAtual]-- faz uma nova celula adicionando uma bomba nela
         -- Tabuleiros
         novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
-        listaJAposBombaSolta = attCapacidades listaJ id ((Patins, p),(Arremesso, a),(Bomba (id, 0), b-1))
+        listaJAposBombaSolta = attCapacidades listaJ id pos dir ((Patins, p),(Arremesso, a),(Bomba (id, 0), b-1))
 
 -- Recebe uma tupla de tabuleiro e uma lista de jogadores
 -- Retorna um tabuleiro
@@ -479,8 +479,8 @@ explodeBomba' t listaJ posicaoBomba num
         novaPos = novaPosicao posicaoBomba dir -- devolve a nova posicao (X, Y) da bomba dependendo da direcao
 
         (flag, idDono) = existeBomba celulaAtual
-        dono@(_, _, _, ((Patins, p),(Arremesso, a),(Bomba (_, 0), b))) = pegaJogador idDono listaJ
-        listaJAposBombaDestruida = attCapacidades listaJ idDono ((Patins, p),(Arremesso, a),(Bomba (idDono, 0), b+1))
+        dono@(_, pos, d, ((Patins, p),(Arremesso, a),(Bomba (_, 0), b))) = pegaJogador idDono listaJ
+        listaJAposBombaDestruida = attCapacidades listaJ idDono pos d ((Patins, p),(Arremesso, a),(Bomba (idDono, 0), b+1))
 
         celulaAtual = pegaIndice t posicaoBomba -- devolve a celula atual
         celulaProx = pegaIndice t novaPos -- devolve a proxima celula
