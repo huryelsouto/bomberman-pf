@@ -6,7 +6,7 @@ import Data.Maybe (fromJust, fromMaybe, isNothing)
 import Text.Read (readMaybe)
 
 -- Presentes ou bomba
-data Objeto = Patins | Arremesso | Bomba DadosBomba  deriving (Show, Eq)
+data Objeto = Patins | Arremesso | Bomba DadosBomba | PresenteBomba  deriving (Show, Eq)
 
 -- Auxiliares para o jogador
 type Capacidades = ((Objeto, Int), (Objeto, Int), (Objeto, Int))
@@ -128,6 +128,7 @@ conf [Grama, Jogador _] = True
 conf [Grama, Objeto _] = True
 conf [Grama, Objeto Arremesso, Parede] = True
 conf [Grama, Objeto Patins, Parede] = True
+conf [Grama, Objeto PresenteBomba, Parede] = True
 conf [Grama, Parede] = True
 conf [Pedra] = True
 conf [Parede] = True
@@ -352,10 +353,11 @@ removeJogador x (y:ys) | x == y = removeJogador x ys
 
 pegaObj :: [Jogador] -> Int -> Objeto -> Capacidades
 pegaObj listaJ id obj
-  | obj == Patins = ((Patins, p+1),(Arremesso, a),b)
-  | obj == Arremesso = ((Patins, p),(Arremesso, a+1),b)
+  | obj == Patins = ((Patins, p+1),(Arremesso, a),(Bomba k, b))
+  | obj == Arremesso = ((Patins, p),(Arremesso, a+1),(Bomba k, b))
+  | obj == PresenteBomba = ((Patins, p),(Arremesso, a),(Bomba k, b+1))
   | otherwise = error "Objeto inválido"
-  where j@(_, _, _, ((Patins, p),(Arremesso, a),b)) = pegaJogador id jogadores
+  where j@(_, _, _, ((Patins, p),(Arremesso, a),(Bomba k, b))) = pegaJogador id jogadores
 
 
 -- Recebe um tabuleiro, a posicao da bomba, a dir que ela ira, e o valor do arremesso -> Retornando um novo Tabuleiro
@@ -366,7 +368,7 @@ arremesso t p dir arr
   | not (novaPosicaoValida p dir) = t
   | arr == 0 = t
   | ult == Parede || ult == Pedra || null celulaProx = t
-  | ult == Objeto Patins || ult == Objeto Arremesso = t
+  | ult == Objeto Patins || ult == Objeto Arremesso || ult == Objeto PresenteBomba = t
   | otherwise = arremesso finalt novaPos dir (arr-1)
   where novaPos = novaPosicao p dir -- devolve a nova posicao (X, Y) do jogador dependendo da direcao 
         celulaAtual = pegaIndice t p -- devolve a celula atual
@@ -389,6 +391,7 @@ movimenta t listaJ id dir
   | ult == Grama = (tabAposMovimento, listaJAposMovimento)
   | ult == Objeto Patins = (tabAposPegoItem, listaJAposItemColetado Patins)
   | ult == Objeto Arremesso = (tabAposPegoItem, listaJAposItemColetado Arremesso)
+  | ult == Objeto PresenteBomba = (tabAposPegoItem, listaJAposItemColetado PresenteBomba)
   | ult == Objeto (Bomba (0,0)) && arr >= 0 = (arremesso t novaPos dir arr, listaJComNovaDirecao)
   | null celulaProx = (novot, listaJSemJogadorId)
   | otherwise = (t, listaJ)
