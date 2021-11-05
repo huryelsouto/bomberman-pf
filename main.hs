@@ -74,7 +74,10 @@ main = do
   where
     (tabuleiro, jogadores) = iniciarTabuleiro
 
+tabuleiroExemplo :: Tabuleiro
 tabuleiroExemplo = tab
+
+jogadoresExemplo :: [Jogador]
 jogadoresExemplo = jogadores
 
 iniciarTabuleiro :: (Tabuleiro, [Jogador])
@@ -164,13 +167,13 @@ linha1 :: Linha
 linha1 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
 
 linha2 :: Linha
-linha2 = ([Grama], [Grama], [Grama], [Grama, Objeto (Bomba (1, 1))], [Grama, Objeto Patins], [Grama], [Grama], [Grama])
+linha2 = ([Grama, Objeto Arremesso], [Grama], [Grama], [Grama, Objeto (Bomba (1, 1))], [Grama, Objeto Patins], [Grama], [Grama], [Grama])
 
 linha3 :: Linha
-linha3 = ([Grama], [Grama], [Grama], [Grama, Parede], [Grama, Objeto (Bomba (2, 1))], [Grama], [Grama], [Grama])
+linha3 = ([Grama, Objeto Patins], [Grama], [Grama], [Grama, Parede], [Grama, Objeto (Bomba (2, 1))], [Grama], [Grama], [Grama])
 
 linha4 :: Linha
-linha4 = ([Grama], [Grama], [Grama], [Grama], [Pedra], [Grama], [Grama], [Grama])
+linha4 = ([Grama, Objeto PresenteBomba], [Grama], [Grama], [Grama], [Pedra], [Grama], [Grama], [Grama])
 
 linha5 :: Linha
 linha5 = ([Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama], [Grama])
@@ -269,18 +272,20 @@ existeJogador cel@(x:xs) id
   | otherwise = existeJogador xs id
 
 
+-- Lista com todas as possíveis combinações de bombas no jogo
 listaBombas :: [Item]
 listaBombas = [ Objeto (Bomba (a, b)) | a <- [1..2], b <- [0..16] ]
 -- >>>listaBombas
 -- [Objeto (Bomba (1,1)),Objeto (Bomba (1,2)),Objeto (Bomba (1,3)),Objeto (Bomba (1,4)),Objeto (Bomba (1,5)),Objeto (Bomba (1,6)),Objeto (Bomba (1,7)),Objeto (Bomba (1,8)),Objeto (Bomba (2,1)),Objeto (Bomba (2,2)),Objeto (Bomba (2,3)),Objeto (Bomba (2,4)),Objeto (Bomba (2,5)),Objeto (Bomba (2,6)),Objeto (Bomba (2,7)),Objeto (Bomba (2,8))]
 
+-- Recebe uma célula e devolve a bomba que está nela ou Nulo, caso não tenha bomba
 pegaBomba :: [Item] -> Item
 pegaBomba [] = Nulo
 pegaBomba cel@(x:xs)
                     | x `elem` listaBombas = x
                     | otherwise = pegaBomba xs
 
-
+-- Recebe uma célula e devolve a célula com o contador da bomba incrementada
 incrementaBomba :: Celula -> Celula
 incrementaBomba [] = []
 incrementaBomba cel@(x:xs)
@@ -290,6 +295,7 @@ incrementaBomba cel@(x:xs)
                           where bomba = pegaBomba cel
                                 Objeto (Bomba (a, b)) = bomba
 
+-- Recebe uma célula e devolve uma tubla informando se a célula tem uma bomba que pode ser explodida.
 existeBomba :: [Item] -> (Bool, Int)
 existeBomba cel
                 | bomba == Nulo = (False, 0)
@@ -328,24 +334,28 @@ novaPosicaoValida pos@(linhaAtual,colunaAtual) d
         proxC = colunaAtual+1
         prevC = colunaAtual-1
 
+-- função que altera a posição e a diração do jogador
 attPosicaoEDirecao :: [Jogador] -> Int -> Posicao -> Char -> [Jogador]
 attPosicaoEDirecao [] _ _ _ = []
 attPosicaoEDirecao ((i,p,d,c):xs) id novaPos novaDir
   | i == id = (i,novaPos,novaDir,c):xs
   |otherwise = (i,p,d,c):attPosicaoEDirecao xs id novaPos novaDir
 
+-- função que a diração do jogador
 attDirecao :: [Jogador] -> Int -> Char -> [Jogador]
 attDirecao [] _ _ = []
 attDirecao ((i,p,d,c):xs) id novaDir
   | i == id = (i,p,novaDir,c):xs
   |otherwise = (i,p,d,c):attDirecao xs id novaDir
 
+-- função que altera as capacidades dos itens de um jogador
 attCapacidades :: [Jogador] -> Int -> Capacidades -> [Jogador]
 attCapacidades [] _ _ = []
 attCapacidades ((i,p,d,c):xs) id novasCapacidades
   | i == id = (i,p,d,novasCapacidades):xs
   |otherwise = (i,p,d,c):attCapacidades xs id novasCapacidades
 
+-- função que remove um jogador da lista de jogadores
 removeJogador :: Jogador -> [Jogador] -> [Jogador]
 removeJogador _ [] = []
 removeJogador x (y:ys) | x == y = removeJogador x ys
@@ -428,8 +438,6 @@ soltaBomba t listaJ id
         -- Tabuleiros
         novot = novoTab t pos celulaAtualAposBomba -- tabuleiro atualizado com a celulaAtual modificada
         listaJAposBombaSolta = attCapacidades listaJ id ((Patins, p),(Arremesso, a),(Bomba (id, 0), b-1))
-        --j@(_, _, _, ((Patins, p),(Arremesso, a),b)) = pegaJogador id jogadores
-        --(ID, Posicao, Char, (Objeto, Int), (Objeto, Int), (Objeto, Int)) 
 
 -- Recebe uma tupla de tabuleiro e uma lista de jogadores
 -- Retorna um tabuleiro
@@ -494,12 +502,12 @@ explodeBomba' t listaJ posicaoBomba num
         tabAposDestruicao = novoTab t novaPos celulaProxDestruida -- tabuleiro atualizado após a bomba destruída em uma posição
         tabAposBombaDestuida = novoTab t posicaoBomba celulaAtualSemBomba -- tabuleiro sem a bomba na célula de origem
 
--- Recebe um uma tupla com o tabuleiro e uma lista de jogadores
+-- Recebe uma tupla com o tabuleiro e uma lista de jogadores
 -- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores (com as bombas estouradas)
 explodeBombasTab :: (Tabuleiro, [Jogador]) -> (Tabuleiro, [Jogador])
 explodeBombasTab (tabu, jog) = explodeBombasTab' (tabu, jog) (0, 0)
 
--- Recebe um uma tupla com o tabuleiro e uma lista de jogadores e a posição inicial do tabuleiro (onde começará os estouros)
+-- Recebe uma tupla com o tabuleiro e uma lista de jogadores e a posição inicial do tabuleiro (onde começará os estouros)
 -- Retorna uma tupla com um novo tabuleiro, e uma nova lista de jogadores (com as bombas estouradas)
 explodeBombasTab' :: (Tabuleiro, [Jogador]) -> (Int, Int) -> (Tabuleiro, [Jogador])
 explodeBombasTab' (tabu, jog) pos@(l, c)
@@ -507,6 +515,8 @@ explodeBombasTab' (tabu, jog) pos@(l, c)
                                      else explodeBombasTab' (explodeBomba tabu jog (l,c)) (l+1, 0)
                           | otherwise = (tabu, jog)
 
+-- Recebe um tabuleiro e a posição inicial do tabuleiro (onde começará a incrementar as bombas)
+-- Retorna um novo tabuleiro (com as bombas com contador incrementado)
 incrementaBombasTab' :: Tabuleiro -> (Int, Int) -> Tabuleiro
 incrementaBombasTab' tabu pos@(l, c)
                           | l <= 7 = if c < 7 then incrementaBombasTab' tabAposBombaIncrementada (l, c+1)
@@ -515,6 +525,8 @@ incrementaBombasTab' tabu pos@(l, c)
                           where  celulaAtualBombaIncrementada = incrementaBomba (pegaIndice tabu pos)
                                  tabAposBombaIncrementada = novoTab tabu pos celulaAtualBombaIncrementada
 
+-- Recebe um tabuleiro
+-- Retorna um novo tabuleiro (com as bombas com contador incrementado)
 incrementaBombasTab :: Tabuleiro -> Tabuleiro
 incrementaBombasTab tabu = incrementaBombasTab' tabu (0, 0)
 
